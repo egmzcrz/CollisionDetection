@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hard disk collisions</title>
+    <style>
+    canvas { background-color: black; display: block; margin: 0 auto; }
+    </style>
+
+    <script src="particle.js"></script>
+    <script src="priorityQueue.js"></script>
+    <script src="event.js"></script>
+    <script src="box.js"></script>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+
+    <script>
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+
+    const tau = 300; // Simulation time
+    const sizes = [40]; // Array of possible particle sizes (radius)
+    const maxParticles = 20; // Max number of particles
+    const maxVel = 10; // Maximum possible velocity
+
+    // Define a new unit-box containing all particles.
+    var box = new Box(canvas.width,canvas.height,maxParticles,maxVel,sizes);
+
+    var t = 0;
+    for (let p of box.particles) {
+        box.predict(p,t);
+    }
+
+    window.requestAnimationFrame(() => draw(t));
+
+    function draw(t) {
+        if (t > tau) { return; }
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for (let p of box.particles) { 
+            ctx.fillStyle = "green";
+            ctx.strokeStyle = "white";
+            ctx.beginPath();
+            ctx.arc(p.rx,p.ry,p.radius,0,2*Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            if (p.ry > canvas.height - p.radius) {
+                ctx.beginPath();
+                ctx.arc(p.rx,p.ry - canvas.height,p.radius,0,2*Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            } else if (p.ry < p.radius) {
+                ctx.beginPath();
+                ctx.arc(p.rx,p.ry + canvas.height,p.radius,0,2*Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+        t = box.update(t);
+        window.requestAnimationFrame(() => draw(t));
+    }
+    </script>
+</body>
+</html>
