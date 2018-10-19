@@ -6,13 +6,6 @@ class Particle {
         this.vy = vy;
         this.radius = radius;
         this.mass = mass;
-
-        // Collision count.
-        this.count = 0;
-
-        // Position in grid.
-        this.i = -1;
-        this.j = -1;
     }
 
 
@@ -49,18 +42,18 @@ class Particle {
     Return the amount of time taken for "this" particle to
     collide with a vertical wall.
     */
-    timeToHitVerticalWall(width) {
-        if (this.vx > 0) return (width - this.radius - this.rx)/this.vx;
-        else if (this.vx < 0) return (this.radius - this.rx)/this.vx;
+    timeToHitVerticalWall(xmin,xmax) {
+        if (this.vx > 0) return (xmax - this.radius - this.rx)/this.vx;
+        else if (this.vx < 0) return (xmin + this.radius - this.rx)/this.vx;
         else             return Infinity;
     }
     /*
     Return the amount of time taken for "this" particle to
     collide with a horizontal wall.
     */
-    timeToHitHorizontalWall(height) {
-        if (this.vy > 0) return (height - this.radius - this.ry)/this.vy;
-        else if (this.vy < 0) return (this.radius - this.ry)/this.vy;
+    timeToHitHorizontalWall(ymin,ymax) {
+        if (this.vy > 0) return (ymax - this.radius - this.ry)/this.vy;
+        else if (this.vy < 0) return (ymin + this.radius - this.ry)/this.vy;
         else             return Infinity;
     }
     /*
@@ -68,18 +61,15 @@ class Particle {
     escape its container. The container is a bounding rectangle
     with dimensions (lx,ly).
     */
-    timeToEscapeCell(lx,ly) {
-        var dtx = 0, dty = 0;
-        var epsilon = 1e-10;
-
-        if (this.vy > 0) dty = (ly*(this.j+1) - this.ry + epsilon)/this.vy;
-        else if (this.vy < 0) dty = (ly*this.j - this.ry - epsilon)/this.vy;
+    timeToEscapeCell(xmin,xmax,ymin,ymax) {
+        var dty = 0, dtx = 0;
+        if (this.vy > 0) dty = (ymax - this.ry)/this.vy;
+        else if (this.vy < 0) dty = (ymin - this.ry)/this.vy;
         else             dty = Infinity;
 
-        if (this.vx > 0) dtx = (lx*(this.i+1) - this.rx + epsilon)/this.vx;
-        else if (this.vx < 0) dtx = (lx*this.i - this.rx - epsilon)/this.vx;
+        if (this.vx > 0) dtx = (xmax - this.rx)/this.vx;
+        else if (this.vx < 0) dtx = (xmin - this.rx)/this.vx;
         else             dtx = Infinity;
-
         return Math.min(dtx,dty);
     }
 
@@ -124,9 +114,6 @@ class Particle {
         this.vy += c1 * dy;
         that.vx -= c2 * dx;
         that.vy -= c2 * dy;
-
-        this.count++;
-        that.count++;
     }
 
     /*
@@ -134,11 +121,9 @@ class Particle {
     */
     bounceOffVerticalWall() {
         this.vx = -this.vx;
-        this.count++;
     }
 
     bounceOffHorizontalWall() {
         this.vy = -this.vy;
-        this.count++;
     }
 }

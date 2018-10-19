@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <title>Hard disk collisions</title>
     <style>
-    canvas { background-color: black; display: block; margin: 0 auto; }
+    #myBox { background-color: white; display: block; margin: 0 auto;
+        border-left: 2px solid; border-right: 2px solid;
+        border-top: 2px dashed; border-bottom: 2px dashed;}
+    #myTitle { background-color: white; display: block; margin: 0 auto;}
     </style>
 
     <script src="particle.js"></script>
@@ -13,33 +16,39 @@
     <script src="box.js"></script>
 </head>
 <body>
-    <canvas id="myCanvas" width="600" height="600"></canvas>
+    <canvas id="myBox" width="600" height="600"></canvas>
+    <canvas id="myTitle" width="600" height="100"></canvas>
 
     <script>
-    var canvas = document.getElementById("myCanvas");
+    var canvas = document.getElementById("myBox");
+    var title = document.getElementById("myTitle");
     var ctx = canvas.getContext("2d");
+    var ctxTitle = title.getContext("2d");
+    ctxTitle.font = '24pt Calibri';
+    ctxTitle.lineWidth = 4;
 
-    const tau = 300; // Simulation time
-    const sizes = [40]; // Array of possible particle sizes (radius)
-    const maxParticles = 20; // Max number of particles
-    const maxVel = 10; // Maximum possible velocity
+    var tau = 300; // Simulation time
+    var radii = [40]; // Array of possible particle radii.
+    var maxParticles = 200; // Maximum possible number of particles.
+
 
     // Define a new unit-box containing all particles.
-    var box = new Box(canvas.width,canvas.height,maxParticles,maxVel,sizes);
+    var box = new Box(canvas.width,canvas.height,maxParticles,radii);
 
     var t = 0;
-    for (let p of box.particles) {
-        box.predict(p,t);
-    }
+
 
     window.requestAnimationFrame(() => draw(t));
 
     function draw(t) {
         if (t > tau) { return; }
+        ctxTitle.clearRect(0,0,title.width,title.height);
+        ctxTitle.fillText('t = '+t,0,title.height/2);
+
         ctx.clearRect(0,0,canvas.width,canvas.height);
         for (let p of box.particles) { 
-            ctx.fillStyle = "green";
-            ctx.strokeStyle = "white";
+            ctx.fillStyle = "orange";
+            ctx.strokeStyle = "black";
             ctx.beginPath();
             ctx.arc(p.rx,p.ry,p.radius,0,2*Math.PI);
             ctx.fill();

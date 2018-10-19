@@ -1,15 +1,15 @@
 class Event {
-    constructor(t,p,q) {
+    constructor(t,i,j,ic,jc) {
         this.t = t;
-        this.p = p;
-        this.q = q;
-        this.countP = p === null ? -1 : p.count;
-        this.countQ = q === null ? -1 : q.count;
+        this.i = i;
+        this.j = j;
+        this.iCount = ic
+        this.jCount = jc
     }
 
-    isValid() {
-        if (this.p !== null && this.p.count != this.countP) return false;
-        if (this.q !== null && this.q.count != this.countQ) return false;
+    isValid(collisionCount) {
+        if (this.i > -1 && this.iCount != collisionCount[this.i]) return false;
+        if (this.j > -1 && this.jCount != collisionCount[this.j]) return false;
         return true;
     }
 
