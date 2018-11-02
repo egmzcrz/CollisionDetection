@@ -1,2 +1,5 @@
-# hard-disk-collision-detection
-Event-driven and time-driven methods implemented for elastic collision detection.
+# Elastic collision detection algorithms
+
+Event driven algorithm using a grid for spatial partitioning.
+
+Time driven algorithm using a grid or quadtree.
