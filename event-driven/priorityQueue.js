@@ -12,7 +12,7 @@ class PriorityQueue {
     }
     push(value) {
         this.heap.push(value);
-        this.siftUp();
+        this.swim();
     }
     pop() {
         const poppedValue = this.heap[0];
@@ -21,7 +21,7 @@ class PriorityQueue {
             this.swap(0, bottom);
         }
         this.heap.pop();
-        this.siftDown();
+        this.sink();
         return poppedValue;
     }
 
@@ -32,7 +32,7 @@ class PriorityQueue {
         [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
     }
 
-    siftUp() {
+    swim() {
         let node = this.heap.length - 1;
         let upper = up(node);
         while (node > 0 && this.compare(node, upper)) {
@@ -41,7 +41,7 @@ class PriorityQueue {
             upper = up(node);
         }
     }
-    siftDown() {
+    sink() {
         let node = 0;
         let lft = left(node);
         let rght = right(node);

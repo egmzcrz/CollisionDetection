@@ -1,11 +1,10 @@
 const periodic = (y,ny) => ((y % ny) + ny) % ny;
 const linear = (x,y,nx) => y * nx + x
 
-class Box {
+class Grid {
     constructor(width,height,maxParticles,radii) {
         this.width = width;
         this.height = height;
-        this.events = new PriorityQueue((e1,e2) => e1.lessThan(e2)); // priority queue
 
         this.createParticles(maxParticles,radii);
 
@@ -31,7 +30,6 @@ class Box {
         this.grid = [];
         for (var i = 0; i < n; i++) { this.grid.push([]); }
         this.positionInGrid = [];
-        this.collisionCount = [];
         for (var i = 0, len = this.particles.length; i < len; i++) {
             let p = this.particles[i];
             let x = Math.floor(p.rx / this.lx);
@@ -39,7 +37,6 @@ class Box {
             let k = linear(x,y,this.nx);
             this.grid[k].push(i);
             this.positionInGrid[i] = k;
-            this.collisionCount[i] = 0;
         }
 
         this.region = [];
@@ -64,9 +61,6 @@ class Box {
                 this.borders.push({xmin:xmin,xmax:xmax, ymin:ymin, ymax:ymax});
             }
         }
-        for (var i = 0, len=this.particles.length; i < len; i++) {
-            this.predict(i,0)
-        }
     }
 
     /*
@@ -84,7 +78,7 @@ class Box {
                 ry = (this.height - 2*radius) * Math.random() + radius,
                 vx = 2*Math.random() - 1,
                 vy = 3*Math.random() - 1,
-                n = Math.sqrt(vx*vx + vy*vy),
+                n = Math.sqrt(vx*vx + vy*vy);
             vx = vx/n;
             vy = vy/n;
             var p = new Particle(rx,ry,vx,vy,radius,mass);
@@ -106,114 +100,50 @@ class Box {
         }
     }
 
-    /*
-    Check particle-particle, particle-wall and particle-grid collisions
-    in the neighbourhood of the particle p.
-    */
-    predict(i,t) {
-        var pi = this.particles[i];
-        var ic = this.collisionCount[i];
+    updatePositionInGrid(i) {
+        var p = this.particles[i];
         var k = this.positionInGrid[i];
-
-
-        // particle-grid collisions
-        var x = Math.floor(pi.rx / this.lx);
-        var y = Math.floor(pi.ry / this.ly);
-        var eps = 1e-10;
-        var borders = this.borders[k];
-        var xmin = borders.xmin - eps;
-        var xmax = borders.xmax + eps;
-        var ymin = borders.ymin - eps;
-        var ymax = borders.ymax + eps;
-        var escapeTime = t + pi.timeToEscapeCell(xmin,xmax,ymin,ymax);
-        this.events.push(new Event(escapeTime,i,i,ic,ic));
-        if (this.region[k].length < 8) {
-            var tt = t + pi.timeToHitVerticalWall(0,this.width);
-            if (tt < escapeTime) {
-                this.events.push(new Event(tt,-1,i,-1,ic));
-            }
-        }
-        for (let kk of this.region[k]) {
-            for (let j of this.grid[kk]) {
-                var pj = this.particles[j];
-                var tt = t + pi.timeToHit(pj,this.height);
-                if (tt < escapeTime) {
-                    var jc = this.collisionCount[j];
-                    this.events.push(new Event(tt,i,j,ic,jc));
-                }
-            }
-        }
-    }
-
-
-    resolveCollisionEvent(event) {
-        var i = event.i;
-        var j = event.j;
-        var t = event.t;
-        if (i > -1 && j > -1) {
-            var pi = this.particles[i];
-            var pj = this.particles[j];
-            pi.bounceOff(pj,this.height);
-            this.collisionCount[i]++;
-            this.collisionCount[j]++;
-            this.predict(i,t);
-            this.predict(j,t);
-        } else if (j > -1) {
-            var pj = this.particles[j];
-            pj.bounceOffVerticalWall();
-            this.collisionCount[j]++;
-            this.predict(j,t);
-        }
-    }
-
-    resolveGridEvent(t,event) {
-        var i = event.i;
-        var pi = this.particles[i];
-        var k = this.positionInGrid[i];
-        // Particle p will change cell inside the grid.
-        // Remove particle from current cell:
-        var cell = this.grid[k];
-        for (var n = 0, len = cell.length; n < len; n++) {
-            if (i == cell[n]) {
-                cell.splice(n,1);
+        var currentCell = this.grid[k];
+        for (var n = 0, len = currentCell.length; n < len; n++) {
+            if (i == currentCell[n]) {
+                currentCell.splice(n,1);
                 break;
             }
         }
-        // Move all particles in time
-        var dt = event.t - t;
-        for (let particle of this.particles) {
-            particle.move(dt,this.height);
-        }
 
-        // Update particle's cell.
-        var x = Math.floor(pi.rx / this.lx);
-        var y = Math.floor(pi.ry / this.ly);
+        var x = Math.floor(p.rx / this.lx);
+        var y = Math.floor(p.ry / this.ly);
         k = linear(x,y,this.nx);
         this.positionInGrid[i] = k;
         this.grid[k].push(i);
-        this.predict(i,event.t);
     }
 
-    update(t) {
-        // Discard every invalid event and resolve grid events.
-        while (true) {
-            var event = this.events.pop();
-            if (event.isValid(this.collisionCount)) {
-                if (event.i > -1 && event.i == event.j) {
-                    this.resolveGridEvent(t,event);
-                    t = event.t;
-                } else { break; }
+    update(dt) {
+        for (var i = 0, len = this.particles.length; i < len; i++) {
+            var p = this.particles[i];
+            var k = this.positionInGrid[i];
+            // Particle is near wall
+            if (this.region[k].length < 8) {
+                if (p.timeToHitVerticalWall(0, this.height) < dt) {
+                    p.bounceOffVerticalWall();
+                }
+                if (p.timeToHitHorizontalWall(0, this.width) < dt) {
+                    //p.bounceOffHorizontalWall();
+                }
+            }
+            for (let kk of this.region[k]) {
+                for (let j of this.grid[kk]) {
+                    var q = this.particles[j];
+                    if (p.timeToHit(q, this.height) < dt) {
+                        p.bounceOff(q, this.height);
+                    }
+                }
             }
         }
 
-        // Move particles to next interesting event.
-        var dt = event.t - t
-        for (let p of this.particles) {
-            p.move(dt,this.height);
+        for (var i = 0, len = this.particles.length; i < len; i++) {
+            this.particles[i].move(dt,this.height);
+            this.updatePositionInGrid(i);
         }
-
-        // Resolve particle-particle, particle-wall and particle-grid collisions.
-        this.resolveCollisionEvent(event);
-        return event.t
     }
 }

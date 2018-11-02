@@ -8,6 +8,7 @@ class Particle {
         this.mass = mass;
     }
 
+
     move(dt,height) {
         this.rx += this.vx * dt;
         this.ry += this.vy * dt;

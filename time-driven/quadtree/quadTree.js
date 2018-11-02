@@ -16,8 +16,8 @@ class Rectangle {
             halfheight = this.h/2;
 
         // get distance from circle's center to box's center
-        var dx_circle2center = abs(p.rx - (this.x + halfwidth)),
-            dy_circle2center = abs(p.ry - (this.y + halfheight));
+        var dx_circle2center = Math.abs(p.rx - (this.x + halfwidth)),
+            dy_circle2center = Math.abs(p.ry - (this.y + halfheight));
 
         if (dx_circle2center > halfwidth + p.radius) return false;
         if (dy_circle2center > halfheight + p.radius) return false;
@@ -44,10 +44,10 @@ class QuadTree {
     subdivide() {
         var w = this.boundary.w/2, h = this.boundary.h/2,
             x = this.boundary.x,   y = this.boundary.y;
-        var tr = new Rectangle(w,h,x+w,y),
-            tl = new Rectangle(w,h,x,y),
-            br = new Rectangle(w,h,x+w,y+h),
-            bl = new Rectangle(w,h,x,y+h);
+        var tr = new Rectangle(w, h, x+w, y+h),
+            tl = new Rectangle(w, h, x, y+h),
+            br = new Rectangle(w, h, x+w, y),
+            bl = new Rectangle(w, h, x, y);
 
         this.tr = new QuadTree(tr,this.capacity);
         this.tl = new QuadTree(tl,this.capacity);
@@ -75,21 +75,23 @@ class QuadTree {
         correctBox.particles.push(p);
     }
 
-    update(p,dt) {
+    update(p,dt, w, h) {
+        if (p.timeToHitVerticalWall(0,w) < dt) { p.bounceOffVerticalWall(); }
+        //if (p.timeToHitHorizontalWall(0,h) < dt) { p.bounceOffHorizontalWall(); }
         var boxes = [this];
+        var isOver = p.ry + p.radius > h
+        var isUnder = p.ry - p.radius < 0
+        if (isOver) {
+            var pOver = new Particle(p.rx, p.ry - h, p.vx, p.vy, p.radius, p.mass)
+        }
+        if (isUnder) {
+            var pUnder = new Particle(p.rx, p.ry + h, p.vx, p.vy, p.radius, p.mass)
+        }
         while (boxes.length > 0) {
             var currentBox = boxes.pop();
-            for (let q of currentBox.particles) {
-                if (p === q) continue;
-                if (p.timeToHit(q) < dt) {
-                    p.bounceOff(q);
-                }
-                if (p.timeToHitVerticalWall() < dt) {
-                    p.bounceOffVerticalWall();
-                }
-                if (p.timeToHitHorizontalWall() < dt) {
-                    p.bounceOffHorizontalWall();
-                }
+            for (var q of currentBox.particles) {
+                if (p === q) { continue; }
+                if (p.timeToHit(q,h) < dt) { p.bounceOff(q,h); }
             }
             if (currentBox.divided) {
                 if (currentBox.tr.boundary.intersects(p)) {
@@ -105,7 +107,34 @@ class QuadTree {
                     boxes.push(currentBox.bl)
                 }
             }
+            if (currentBox.divided && isOver) {
+                if (currentBox.tr.boundary.intersects(pOver)) {
+                    boxes.push(currentBox.tr)
+                }
+                if (currentBox.tl.boundary.intersects(pOver)) {
+                    boxes.push(currentBox.tl)
+                }
+                if (currentBox.br.boundary.intersects(pOver)) {
+                    boxes.push(currentBox.br)
+                }
+                if (currentBox.bl.boundary.intersects(pOver)) {
+                    boxes.push(currentBox.bl)
+                }
+            }
+            if (currentBox.divided && isUnder) {
+                if (currentBox.tr.boundary.intersects(pUnder)) {
+                    boxes.push(currentBox.tr)
+                }
+                if (currentBox.tl.boundary.intersects(pUnder)) {
+                    boxes.push(currentBox.tl)
+                }
+                if (currentBox.br.boundary.intersects(pUnder)) {
+                    boxes.push(currentBox.br)
+                }
+                if (currentBox.bl.boundary.intersects(pUnder)) {
+                    boxes.push(currentBox.bl)
+                }
+            }
         }
-        p.move(dt);
     }
 }
